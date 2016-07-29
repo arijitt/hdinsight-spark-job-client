@@ -53,10 +53,10 @@ object LivyClientArgumentParser {
       s" --driver-memory-in-gb $driverMemoryInGB --cluster-fqdn $clusterFQDN --cluster-username $clusterUsername" +
       s" --cluster-password $clusterPassword [--batch-mode]|--interactive-mode")
     println()
-    println(s"Usage: --monitor|--monitor --job-id $jobId --cluster-fqdn $clusterFQDN --cluster-username $clusterUsername" +
+    println(s"Usage: --monitor|--monitor --livy-id $jobId --cluster-fqdn $clusterFQDN --cluster-username $clusterUsername" +
       s" --cluster-password $clusterPassword [--batch-mode]|--interactive-mode")
     println()
-    println(s"Usage: --monitor|--kill --job-id $jobId --cluster-fqdn $clusterFQDN --cluster-username $clusterUsername" +
+    println(s"Usage: --monitor|--kill --livy-id $jobId --cluster-fqdn $clusterFQDN --cluster-username $clusterUsername" +
       s" --cluster-password $clusterPassword [--batch-mode]|--interactive-mode")
     println()
     println(s"Usage: --list --cluster-fqdn $clusterFQDN --cluster-username $clusterUsername" +
@@ -69,17 +69,23 @@ object LivyClientArgumentParser {
     argumentList match {
       case Nil => argumentMap
       case "--list" :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ListJobs) -> true), tail)
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.List) -> true), tail)
       case "--submit" :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.SubmitJob) -> true), tail)
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.Submit) -> true), tail)
+      case "--start" :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.Start) -> true), tail)
       case "--run" :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.RunJob) -> true), tail)
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.Run) -> true), tail)
       case "--monitor" :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.MonitorJob) -> true), tail)
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.Monitor) -> true), tail)
       case "--kill" :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.KillJob) -> true), tail)
-      case "--application-name" :: value :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ApplicationName) -> value.toString), tail)
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.Kill) -> true), tail)
+      case "--session-kind" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.SessionKind) -> value.toString), tail)
+      case "--proxy-user" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ProxyUser) -> value.toString), tail)
+      case "--yarn-application-name" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.YarnApplicationName) -> value.toString), tail)
       case "--application-jar" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ApplicationJAR) -> value.toString), tail)
       case "--application-class" :: value :: tail =>
@@ -90,17 +96,25 @@ object LivyClientArgumentParser {
       case "--jars-in-classpath" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ClasspathJARS)
           -> value.toString.split(Array(',', ';')).map(_.trim).toList.filter(_.nonEmpty)), tail)
+      case "--pyfiles-in-pythonpath" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.PythonpathPyFiles)
+          -> value.toString.split(Array(',', ';')).map(_.trim).toList.filter(_.nonEmpty)), tail)
       case "--files-in-executor-working-directory" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ExecutorFiles)
           -> value.toString.split(Array(',', ';')).map(_.trim).toList.filter(_.nonEmpty)), tail)
+      case "--yarn-archives" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.YarnArchives)
+          -> value.toString.split(Array(',', ';')).map(_.trim).toList.filter(_.nonEmpty)), tail)
       case "--executor-count" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ExecutorCount) -> value.toInt), tail)
-      case "--per-executor-core-count" :: value :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.PerExecutorCoreCount) -> value.toInt), tail)
       case "--per-executor-memory-in-gb" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.PerExecutorMemoryInGB) -> value.toInt), tail)
+      case "--per-executor-core-count" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.PerExecutorCoreCount) -> value.toInt), tail)
       case "--driver-memory-in-gb" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.DriverMemoryInGB) -> value.toInt), tail)
+      case "--driver-core-count" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.DriverCoreCount) -> value.toInt), tail)
       case "--cluster-fqdn" :: value :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.ClusterFQDN) -> value.toString), tail)
       case "--cluster-username" :: value :: tail =>
@@ -113,8 +127,8 @@ object LivyClientArgumentParser {
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.BatchMode) -> true), tail)
       case "--interactive-mode" :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.InteractiveMode) -> true), tail)
-      case "--job-id" :: value :: tail =>
-        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.JobId) -> value.toInt), tail)
+      case "--livy-id" :: value :: tail =>
+        parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.LivyId) -> value.toInt), tail)
       case "--test-mode" :: tail =>
         parseArguments(argumentMap ++ Map(Symbol(LivyClientArgumentKeys.TestMode) -> true), tail)
       case option :: tail =>
@@ -159,16 +173,18 @@ object LivyClientArgumentParser {
     }
     else if (modeCount == 0) clientOptions = clientOptions ++ Map(LivyClientMode -> LivyClientMode.Batch)
 
+
+
     //Verify only one of the job actions has been specified
 
     var actionCount: Int = 0
 
-    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.ListJobs))) {
+    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.List))) {
       clientOptions = clientOptions ++ Map(LivyClientAction -> LivyClientAction.List)
       actionCount += 1
     }
 
-    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.SubmitJob))) {
+    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.Submit))) {
       assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.ApplicationJAR)))
       assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.ApplicationClass)))
       assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.ExecutorCount)))
@@ -179,7 +195,13 @@ object LivyClientArgumentParser {
       actionCount += 1
     }
 
-    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.RunJob))) {
+    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.Start))) {
+      clientOptions = clientOptions ++ Map(LivyClientAction -> LivyClientAction.Start)
+      assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.SessionKind)))
+      actionCount += 1
+    }
+
+    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.Run))) {
       assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.ApplicationJAR)))
       assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.ApplicationClass)))
       assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.ExecutorCount)))
@@ -190,14 +212,14 @@ object LivyClientArgumentParser {
       actionCount += 1
     }
 
-    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.MonitorJob))) {
-      assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.JobId)))
+    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.Monitor))) {
+      assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.LivyId)))
       clientOptions = clientOptions ++ Map(LivyClientAction -> LivyClientAction.Monitor)
       actionCount += 1
     }
 
-    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.KillJob))) {
-      assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.JobId)))
+    if (argumentMap.contains(Symbol(LivyClientArgumentKeys.Kill))) {
+      assert(argumentMap.contains(Symbol(LivyClientArgumentKeys.LivyId)))
       clientOptions = clientOptions ++ Map(LivyClientAction -> LivyClientAction.Kill)
       actionCount += 1
     }

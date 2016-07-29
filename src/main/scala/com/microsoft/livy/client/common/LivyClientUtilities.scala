@@ -17,6 +17,9 @@
 
 package com.microsoft.livy.client.common
 
+import com.microsoft.livy.client.batch.job._
+import com.microsoft.livy.client.interactive.session._
+
 object LivyClientUtilities {
 
   def printSessionList(livySessionList: LivySessionList): Unit = {
@@ -43,6 +46,19 @@ object LivyClientUtilities {
     println("Jod State: " + livyJobDetails.state)
     println("Job Logs: ")
     livyJobDetails.log.foreach {
+      println
+    }
+    println()
+  }
+
+  def printSessionDetails(livySessionDetails: LivySessionDetails): Unit = {
+
+    println()
+    println("Session Kind: " + livySessionDetails.kind)
+    println("Session ID: " + livySessionDetails.id)
+    println("Session State: " + livySessionDetails.state)
+    println("Session Logs: ")
+    livySessionDetails.log.foreach {
       println
     }
     println()

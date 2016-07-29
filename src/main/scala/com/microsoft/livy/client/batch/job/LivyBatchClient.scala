@@ -35,12 +35,12 @@ object LivyBatchClient {
 
     var jobId: Long = -1
 
-    if (inputOptions.contains(Symbol(LivyClientArgumentKeys.SubmitJob))
-      || inputOptions.contains(Symbol(LivyClientArgumentKeys.RunJob))) {
+    if (inputOptions.contains(Symbol(LivyClientArgumentKeys.Submit))
+      || inputOptions.contains(Symbol(LivyClientArgumentKeys.Run))) {
 
       val jobRequest: LivyBatchJob = new LivyBatchJob(
-        if (inputOptions.contains(Symbol(LivyClientArgumentKeys.ApplicationName)))
-          inputOptions(Symbol(LivyClientArgumentKeys.ApplicationName)).toString
+        if (inputOptions.contains(Symbol(LivyClientArgumentKeys.YarnApplicationName)))
+          inputOptions(Symbol(LivyClientArgumentKeys.YarnApplicationName)).toString
         else "Livy",
         inputOptions(Symbol(LivyClientArgumentKeys.ApplicationJAR)).toString,
         inputOptions(Symbol(LivyClientArgumentKeys.ApplicationClass)).toString,
@@ -54,11 +54,15 @@ object LivyBatchClient {
         if (inputOptions.contains(Symbol(LivyClientArgumentKeys.ClasspathJARS)))
           inputOptions(Symbol(LivyClientArgumentKeys.ClasspathJARS)).asInstanceOf[List[String]]
         else List[String](),
-        if (inputOptions.contains(Symbol(LivyClientArgumentKeys.ExecutorFiles))) {
+        if (inputOptions.contains(Symbol(LivyClientArgumentKeys.ExecutorFiles)))
           inputOptions(Symbol(LivyClientArgumentKeys.ExecutorFiles)).asInstanceOf[List[String]]
-        } else {
-          List[String]()
-        })
+        else List[String](),
+        if(inputOptions.contains(Symbol(LivyClientArgumentKeys.SparkConfigurations)))
+          Some(inputOptions(Symbol(LivyClientArgumentKeys.SparkConfigurations)).toString.split(",").map(x =>
+          { val y = x.split("=")
+            (y(0), y(1))
+          }).toMap)
+        else None)
 
       val testMode: Boolean = inputOptions.contains(Symbol(LivyClientArgumentKeys.TestMode))
 
@@ -77,10 +81,10 @@ object LivyBatchClient {
 
   def monitor(inputOptions: LivyClientArgumentParser.ArgumentMap, livyJobId: Long): Unit = {
 
-    if (inputOptions.contains(Symbol(LivyClientArgumentKeys.RunJob))
-      || inputOptions.contains(Symbol(LivyClientArgumentKeys.MonitorJob))) {
+    if (inputOptions.contains(Symbol(LivyClientArgumentKeys.Run))
+      || inputOptions.contains(Symbol(LivyClientArgumentKeys.Monitor))) {
 
-      val jobId = if (livyJobId < 0) inputOptions(Symbol(LivyClientArgumentKeys.JobId)).asInstanceOf[Int]
+      val jobId = if (livyJobId < 0) inputOptions(Symbol(LivyClientArgumentKeys.LivyId)).asInstanceOf[Int]
       else livyJobId
 
       val testMode: Boolean = inputOptions.contains(Symbol(LivyClientArgumentKeys.TestMode))
@@ -102,7 +106,7 @@ object LivyBatchClient {
 
   def kill(inputOptions: LivyClientArgumentParser.ArgumentMap): Unit = {
 
-    val jobId = inputOptions(Symbol(LivyClientArgumentKeys.JobId)).asInstanceOf[Int]
+    val jobId = inputOptions(Symbol(LivyClientArgumentKeys.LivyId)).asInstanceOf[Int]
 
     val deleteURL = "https://%s/livy/batches/%s".format(inputOptions(Symbol(LivyClientArgumentKeys.ClusterFQDN)), jobId)
 

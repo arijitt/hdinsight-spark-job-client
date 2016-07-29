@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package com.microsoft.livy.client.common
+package com.microsoft.livy.client.interactive.session
 
-class LivyJobDetails(
-                      var id: Long,
-                      var state: String,
-                      var log: List[String])
+class LivySessionDetails(
+                          var id: Long,
+                          var kind: String,
+                          var state: String,
+                          var log: List[String])

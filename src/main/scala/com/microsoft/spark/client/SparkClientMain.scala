@@ -19,6 +19,7 @@ package com.microsoft.spark.client
 
 import com.microsoft.livy.client.argument.parser._
 import com.microsoft.livy.client.batch.job.LivyBatchClient
+import com.microsoft.livy.client.interactive.session.LivyInteractiveClient
 import com.microsoft.livy.client.common._
 
 object SparkClientMain {
@@ -28,15 +29,14 @@ object SparkClientMain {
     val inputOptions: LivyClientArgumentParser.ArgumentMap
     = LivyClientArgumentParser.parseArguments(Map(), inputArguments.toList)
 
-    //println(inputOptions)
+    println(inputOptions)
 
     val clientOptions: LivyClientArgumentParser.ClientOptions
     = LivyClientArgumentParser.verifyUpdateArguments(inputOptions)
 
-    //println(clientOptions)
+    println(clientOptions)
 
     clientOptions(LivyClientMode) match {
-
       case LivyClientMode.Batch => {
         clientOptions(LivyClientAction) match {
           case LivyClientAction.List => LivyBatchClient.list(inputOptions)
@@ -44,10 +44,17 @@ object SparkClientMain {
           case LivyClientAction.Run => LivyBatchClient.monitor(inputOptions, LivyBatchClient.submit(inputOptions))
           case LivyClientAction.Monitor => LivyBatchClient.monitor(inputOptions, -1)
           case LivyClientAction.Kill => LivyBatchClient.kill(inputOptions)
+          case _ => throw new NotImplementedError()
         }
       }
 
-      case LivyClientMode.Interactive => throw new NotImplementedError()
+      case LivyClientMode.Interactive => {
+        clientOptions(LivyClientAction) match {
+          case LivyClientAction.List => LivyInteractiveClient.list(inputOptions)
+          case LivyClientAction.Start => LivyInteractiveClient.start(inputOptions)
+          case _ => throw new NotImplementedError()
+        }
+      }
     }
   }
 }

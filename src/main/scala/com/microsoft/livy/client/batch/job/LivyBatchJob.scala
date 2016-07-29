@@ -27,5 +27,5 @@ class LivyBatchJob(
                     var executorMemory: String,
                     var driverMemory: String,
                     var jars: List[String],
-                    var files: List[String])
-
+                    var files: List[String],
+                    var conf: Option[Map[String, String]])

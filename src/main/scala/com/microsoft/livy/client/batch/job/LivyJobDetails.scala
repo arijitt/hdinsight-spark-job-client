@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-package com.microsoft.livy.client.common
+package com.microsoft.livy.client.batch.job
 
-object LivyClientMode extends Enumeration {
-  val Batch, Interactive = Value
-}
-
-object LivyClientAction extends Enumeration {
-  val List, Start, Submit, Run, Monitor, Kill = Value
-}
+class LivyJobDetails(
+                      var id: Long,
+                      var state: String,
+                      var log: List[String])

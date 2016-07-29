@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.microsoft.livy.client.batch.job
+package com.microsoft.livy.client.interactive.session
 
 import com.microsoft.livy.client.common._
 import com.microsoft.livy.client.trust.manager.LivyClientTrustProvider
@@ -28,7 +28,7 @@ import org.json4s.ShortTypeHints
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization._
 
-object LivyBatchJobAction {
+object LivyInteractiveSessionAction {
 
   def list(listUrl: String, userDetails: LivyUserCredentials, testMode: Boolean): LivySessionList = {
 
@@ -64,10 +64,9 @@ object LivyBatchJobAction {
       read[LivySessionList](responseContent)
     }
     else new LivySessionList(-1, -1, List[LivySession]())
-
   }
 
-  def get(getUrl: String, jobId: Long, userDetails: LivyUserCredentials, testMode: Boolean): LivyJobDetails = {
+  def get(getUrl: String, jobId: Long, userDetails: LivyUserCredentials, testMode: Boolean): LivySessionDetails = {
 
     val credentialsProvider:  CredentialsProvider = new BasicCredentialsProvider()
     val userCredentials: UsernamePasswordCredentials = new UsernamePasswordCredentials(userDetails.userName,
@@ -96,13 +95,13 @@ object LivyBatchJobAction {
           List()
         )
       )
-      read[LivyJobDetails](responseContent)
+      read[LivySessionDetails](responseContent)
     }
-    else new LivyJobDetails(jobId, "UNDEFINED", List[String](responseContent))
+    else new LivySessionDetails(jobId, "UNDEFINED", "UNDEFINED", List[String](responseContent))
   }
 
-  def submit(postUrl: String, userDetails: LivyUserCredentials,  jobRequest: LivyBatchJob, testMode: Boolean)
-  : LivyJobDetails = {
+  def run(postUrl: String, userDetails: LivyUserCredentials,  sessionRequest: LivyInteractiveSession, testMode: Boolean)
+  : LivySessionDetails = {
 
     implicit val formats = Serialization.formats(
       ShortTypeHints(
@@ -110,7 +109,7 @@ object LivyBatchJobAction {
       )
     )
 
-    val prettyJobRequestJSON = writePretty(jobRequest)
+    val prettyJobRequestJSON = writePretty(sessionRequest)
 
     println(s"Serialized Job Request = $prettyJobRequestJSON")
 
@@ -121,7 +120,7 @@ object LivyBatchJobAction {
 
     val postRequest = new HttpPost(postUrl)
     postRequest.addHeader("Content-Type", "application/json")
-    postRequest.setEntity(new StringEntity(write(jobRequest)))
+    postRequest.setEntity(new StringEntity(write(sessionRequest)))
 
     val httpClient: CloseableHttpClient = LivyClientTrustProvider.getHttpClient(credentialsProvider, testMode)
 
@@ -141,43 +140,7 @@ object LivyBatchJobAction {
 
     httpClient.close()
 
-    if(statusCode == 200 || statusCode == 201) read[LivyJobDetails](responseContent)
-    else new LivyJobDetails(-1, "UNDEFINED", List[String](responseContent))
-  }
-
-  def kill(deleteUrl: String, jobId: Long, userDetails: LivyUserCredentials, testMode: Boolean): LivyJobDetails = {
-
-    val credentialsProvider:  CredentialsProvider = new BasicCredentialsProvider()
-    val userCredentials: UsernamePasswordCredentials = new UsernamePasswordCredentials(userDetails.userName,
-      userDetails.userPassword)
-    credentialsProvider.setCredentials(AuthScope.ANY, userCredentials)
-
-    val httpClient: CloseableHttpClient = LivyClientTrustProvider.getHttpClient(credentialsProvider, testMode)
-
-    val httpResponse = httpClient.execute(new HttpDelete(deleteUrl))
-    val statusCode: Int = httpResponse.getStatusLine.getStatusCode
-
-    val responseEntity = httpResponse.getEntity
-    var responseContent: String = ""
-
-    if (responseEntity != null) {
-      val inputStream = responseEntity.getContent
-      responseContent = scala.io.Source.fromInputStream(inputStream).getLines.mkString
-      inputStream.close()
-    }
-
-    httpClient.close()
-
-    if(statusCode == 200 || statusCode == 201) {
-      implicit val formats = Serialization.formats(
-        ShortTypeHints(
-          List()
-        )
-      )
-      val livyMessage: LivyMessage = read[LivyMessage](responseContent)
-      new LivyJobDetails(jobId, "KILLED", List[String](livyMessage.msg))
-    }
-    else if(statusCode == 404) new LivyJobDetails(jobId, "NOTFOUND", List[String](responseContent))
-    else new LivyJobDetails(jobId, "UNDEFINED", List[String](responseContent))
+    if(statusCode == 200 || statusCode == 201) read[LivySessionDetails](responseContent)
+    else new LivySessionDetails(-1, "UNDEFINED", "UNDEFINED", List[String](responseContent))
   }
 }
